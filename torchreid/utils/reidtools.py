@@ -48,7 +48,7 @@ def visualize_ranked_results(
     model = AgglomerativeClustering(affinity='precomputed', n_clusters=750, linkage='complete').fit(distmat)
     #model = AgglomerativeClustering(affinity='precomputed', n_clusters=None, linkage='complete', distance_threshold=350).fit(distmat)
     labels = model.labels_
-    print(labels)
+    #print(labels)
     indices = []
     
     '''
@@ -75,7 +75,11 @@ def visualize_ranked_results(
     '''
     
     
-    dst = '/notebooks/log/resnet50/output'
+    dst = './log/resnet50/output'
+    
+    if os.path.exists(dst) and os.path.isdir(dst):
+        shutil.rmtree(dst)
+
     
     for n,i in enumerate(indices):
         dstt = osp.join(dst, str(n)+'x') #dataset[0][i[0]][0].split('/')[-1][0:4])
@@ -83,37 +87,37 @@ def visualize_ranked_results(
         for j in i:
             shutil.copy(dataset[0][j][0], dstt)
     
-    for i in os.listdir('/notebooks/log/resnet50/output'):
-        listt = list(map(lambda x:x[0:4], os.listdir(os.path.join('/notebooks/log/resnet50/output',i))))
+    for i in os.listdir(dst):
+        listt = list(map(lambda x:x[0:4], os.listdir(os.path.join(dst,i))))
         dict = {j : listt.count(j) for j in listt}
         name = sorted(dict.items(), key = lambda x:x[1])[-1][0]
-        if(osp.exists(os.path.join('/notebooks/log/resnet50/output',name+'_4'))):
-            os.rename(os.path.join('/notebooks/log/resnet50/output',i),os.path.join('/notebooks/log/resnet50/output',name+'_5'))
-        elif(osp.exists(os.path.join('/notebooks/log/resnet50/output',name+'_3'))):
-            os.rename(os.path.join('/notebooks/log/resnet50/output',i),os.path.join('/notebooks/log/resnet50/output',name+'_4'))
-        elif(osp.exists(os.path.join('/notebooks/log/resnet50/output',name+'_2'))):
-            os.rename(os.path.join('/notebooks/log/resnet50/output',i),os.path.join('/notebooks/log/resnet50/output',name+'_3'))
-        elif(osp.exists(os.path.join('/notebooks/log/resnet50/output',name))):
-            os.rename(os.path.join('/notebooks/log/resnet50/output',i),os.path.join('/notebooks/log/resnet50/output',name+'_2'))      
+        if(osp.exists(os.path.join(dst,name+'_4'))):
+            os.rename(os.path.join(dst,i),os.path.join(dst,name+'_5'))
+        elif(osp.exists(os.path.join(dst,name+'_3'))):
+            os.rename(os.path.join(dst,i),os.path.join(dst,name+'_4'))
+        elif(osp.exists(os.path.join(dst,name+'_2'))):
+            os.rename(os.path.join(dst,i),os.path.join(dst,name+'_3'))
+        elif(osp.exists(os.path.join(dst,name))):
+            os.rename(os.path.join(dst,i),os.path.join(dst,name+'_2'))      
         else:
-            os.rename(os.path.join('/notebooks/log/resnet50/output',i),os.path.join('/notebooks/log/resnet50/output',name))    
+            os.rename(os.path.join(dst,i),os.path.join(dst,name))    
     
     
-    print("silhouette_score: "+str(metrics.silhouette_score(distmat, labels, metric='euclidean')))
-    print("calinski_harabasz_score: "+str(metrics.calinski_harabasz_score(distmat, labels)))
-    print("davies_bouldin_score: "+str(metrics.davies_bouldin_score(distmat, labels)))
+    #print("silhouette_score: "+str(metrics.silhouette_score(distmat, labels, metric='euclidean')))
+    #print("calinski_harabasz_score: "+str(metrics.calinski_harabasz_score(distmat, labels)))
+    #print("davies_bouldin_score: "+str(metrics.davies_bouldin_score(distmat, labels)))
     
     
-    print("Calculating custom metric")
+    print("Calculating custom metric...")
     TP = 0
     FP = 0
     FN = 0
-    for i in os.listdir('/notebooks/log/resnet50/output'):
-        listt = list(map(lambda x:x[0:4], os.listdir(os.path.join('/notebooks/log/resnet50/output',i))))
+    for i in os.listdir(dst):
+        listt = list(map(lambda x:x[0:4], os.listdir(os.path.join(dst,i))))
         correct = listt.count(i[0:4])
         TP += correct
         FP += len(listt)-correct
-        queryList = list(map(lambda x:x[0:4], os.listdir('/notebooks/reid-data/market1501/Market-1501-v15.09.15/query')))
+        queryList = list(map(lambda x:x[0:4], os.listdir('./reid-data/market1501/Market-1501-v15.09.15/query')))
         FN += queryList.count(i)-correct
     
     FMI = TP / math.sqrt((TP + FP) * (TP + FN))
@@ -121,6 +125,10 @@ def visualize_ranked_results(
     print("FP: "+str(FP))
     print("FN: "+str(FN))
     print("Fowlkes-Mallows Score: "+str(FMI))
+    
+    
+    
+    '''
     print('Stalling')
     while True:
         pass
@@ -239,3 +247,4 @@ def visualize_ranked_results(
             print('- done {}/{}'.format(q_idx + 1, num_q))
 
     print('Done. Images have been saved to "{}" ...'.format(save_dir))
+    '''
