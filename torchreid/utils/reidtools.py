@@ -1,10 +1,15 @@
 from __future__ import print_function, absolute_import
 import numpy as np
 import shutil
+import os
 import os.path as osp
 import cv2
+import math
 
 from .tools import mkdir_if_missing
+
+from sklearn.cluster import AgglomerativeClustering
+from sklearn import metrics
 
 __all__ = ['visualize_ranked_results']
 
@@ -37,6 +42,88 @@ def visualize_ranked_results(
             Default is 10.
     """
     num_q, num_g = distmat.shape
+    
+    np.set_printoptions(suppress=True)
+    
+    model = AgglomerativeClustering(affinity='precomputed', n_clusters=750, linkage='complete').fit(distmat)
+    #model = AgglomerativeClustering(affinity='precomputed', n_clusters=None, linkage='complete', distance_threshold=350).fit(distmat)
+    labels = model.labels_
+    print(labels)
+    indices = []
+    
+    '''
+    for i,x in enumerate(labels):
+        if(x==labels[7]):
+            print(dataset[0][i][0])
+    '''        
+            
+    for i,x in enumerate(labels):
+        indices.append([])
+        for i2,x2 in enumerate(labels):
+            if(x!=-1 and x==x2 and i2!=0): 
+                indices[i].append(i2)
+                labels[i2]=-1
+         
+    
+    indices[0].append(0)
+    indices = list(filter(None, indices))
+    #print(indices)
+    
+    '''
+    for x in indices[7]:
+        print(dataset[0][x][0])
+    '''
+    
+    
+    dst = '/notebooks/log/resnet50/output'
+    
+    for n,i in enumerate(indices):
+        dstt = osp.join(dst, str(n)+'x') #dataset[0][i[0]][0].split('/')[-1][0:4])
+        mkdir_if_missing(dstt)
+        for j in i:
+            shutil.copy(dataset[0][j][0], dstt)
+    
+    for i in os.listdir('/notebooks/log/resnet50/output'):
+        listt = list(map(lambda x:x[0:4], os.listdir(os.path.join('/notebooks/log/resnet50/output',i))))
+        dict = {j : listt.count(j) for j in listt}
+        name = sorted(dict.items(), key = lambda x:x[1])[-1][0]
+        if(osp.exists(os.path.join('/notebooks/log/resnet50/output',name+'_4'))):
+            os.rename(os.path.join('/notebooks/log/resnet50/output',i),os.path.join('/notebooks/log/resnet50/output',name+'_5'))
+        elif(osp.exists(os.path.join('/notebooks/log/resnet50/output',name+'_3'))):
+            os.rename(os.path.join('/notebooks/log/resnet50/output',i),os.path.join('/notebooks/log/resnet50/output',name+'_4'))
+        elif(osp.exists(os.path.join('/notebooks/log/resnet50/output',name+'_2'))):
+            os.rename(os.path.join('/notebooks/log/resnet50/output',i),os.path.join('/notebooks/log/resnet50/output',name+'_3'))
+        elif(osp.exists(os.path.join('/notebooks/log/resnet50/output',name))):
+            os.rename(os.path.join('/notebooks/log/resnet50/output',i),os.path.join('/notebooks/log/resnet50/output',name+'_2'))      
+        else:
+            os.rename(os.path.join('/notebooks/log/resnet50/output',i),os.path.join('/notebooks/log/resnet50/output',name))    
+    
+    
+    print("silhouette_score: "+str(metrics.silhouette_score(distmat, labels, metric='euclidean')))
+    print("calinski_harabasz_score: "+str(metrics.calinski_harabasz_score(distmat, labels)))
+    print("davies_bouldin_score: "+str(metrics.davies_bouldin_score(distmat, labels)))
+    
+    
+    print("Calculating custom metric")
+    TP = 0
+    FP = 0
+    FN = 0
+    for i in os.listdir('/notebooks/log/resnet50/output'):
+        listt = list(map(lambda x:x[0:4], os.listdir(os.path.join('/notebooks/log/resnet50/output',i))))
+        correct = listt.count(i[0:4])
+        TP += correct
+        FP += len(listt)-correct
+        queryList = list(map(lambda x:x[0:4], os.listdir('/notebooks/reid-data/market1501/Market-1501-v15.09.15/query')))
+        FN += queryList.count(i)-correct
+    
+    FMI = TP / math.sqrt((TP + FP) * (TP + FN))
+    print("TP: "+str(TP))
+    print("FP: "+str(FP))
+    print("FN: "+str(FN))
+    print("Fowlkes-Mallows Score: "+str(FMI))
+    print('Stalling')
+    while True:
+        pass
     mkdir_if_missing(save_dir)
 
     print('# query: {}\n# gallery {}'.format(num_q, num_g))

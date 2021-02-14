@@ -320,7 +320,7 @@ class Engine(object):
             domain = 'source' if name in self.datamanager.sources else 'target'
             print('##### Evaluating {} ({}) #####'.format(name, domain))
             query_loader = self.test_loader[name]['query']
-            gallery_loader = self.test_loader[name]['gallery']
+            gallery_loader = self.test_loader[name]['query']
             rank1, mAP = self._evaluate(
                 dataset_name=name,
                 query_loader=query_loader,
