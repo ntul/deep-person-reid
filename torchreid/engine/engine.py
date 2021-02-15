@@ -315,12 +315,13 @@ class Engine(object):
         """
         self.set_model_mode('eval')
         targets = list(self.test_loader.keys())
-
+        imgLoader = 'query' if visrank==True else 'gallery' 
+        
         for name in targets:
             domain = 'source' if name in self.datamanager.sources else 'target'
             print('##### Evaluating {} ({}) #####'.format(name, domain))
             query_loader = self.test_loader[name]['query']
-            gallery_loader = self.test_loader[name]['query']
+            gallery_loader = self.test_loader[name][imgLoader]
             rank1, mAP = self._evaluate(
                 dataset_name=name,
                 query_loader=query_loader,
